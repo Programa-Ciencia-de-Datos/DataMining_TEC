@@ -1,0 +1,81 @@
+---
+title: "Project Data Preparation"
+author: "Graciela Rivera/Luis E. Vargas"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Apertura de archivo
+
+```{r }
+
+datosEcommerce <- read.csv('data-2.csv', sep=",")
+
+```
+
+## Inspección del archivo
+
+```{r }
+
+names(datosEcommerce)
+str(datosEcommerce)
+nrow(datosEcommerce)
+summary(datosEcommerce)
+
+```
+
+## Asociar el tipo de dato a Date
+
+```{r }
+
+#datosEcommerce$InvoiceDate <- as.POSIXct(datosEcommerce$InvoiceDate, format="%m/%d/%Y %H:%M")
+datosEcommerce$InvoiceDate <- as.Date(datosEcommerce$InvoiceDate, format="%m/%d/%Y")
+str(datosEcommerce)
+
+```
+
+## Crea nuevo atributo para ventas, apartir de los atributos de cantidad del item y el precio unitario
+
+```{r}
+
+datosEcommerce$Sales <- datosEcommerce$Quantity * datosEcommerce$UnitPrice
+str(datosEcommerce)
+
+```
+
+## Exploración de Datos
+
+```{r}
+
+head(datosEcommerce, n=10)
+
+#kable(head(datosEcommerce,20)) %>% kable_styling()
+
+```
+
+## Generación de Histograma
+
+```{r}
+
+hist(x = datosEcommerce$Sales,
+     main="Histograma",
+     xlab = "Ventas",
+     ylab = "Frecuencia")
+
+```
+
+## Gráfico Barras
+
+```{r}
+
+barplot(prop.table(table(datosEcommerce$Country)),
+        main = "Gráfico de barras")
+
+```
+
+
