@@ -1,0 +1,189 @@
+---
+title: " Market Analysis for Target Global"
+author: 'Autores: Graciela Rivera, Luis E. Vargas Porras '
+output:
+  html_document:
+    highlight.chooser: yes
+    number_sections: yes
+    theme: cosmo
+    theme.chooser: yes
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(error = FALSE )
+
+```
+
+![](https://image.cnbcfm.com/api/v1/image/107064087-1668607774406-tar.jpg?v=1675257975&w=740&h=416&ffmt=webp&vtcrop=y)
+
+# Fase del entendimiento de negocio: 
+***
+## Objetivo y criterio de Negocio {.tabset .tabset-fade .tabset-pills} 
+
+### Objetivo
+
+Identificar aquellas transacciones de órdenes de compra de Target Global que sean altamente asociadas entre ellas con el fin de aumentar las promociones de estos productos para el Q1, 2023 y sirva de información para el motor de recomendación de su tienda online. 
+
+### Criterio de Negocio
+
+1)	Aumentar en un 3% las promociones de los productos que tenga una fuerte asociación para el próximo Q3, 2023.
+2)	Aumentar las ventas del negocio en 5% para el próximo Q3, 2023, y un 7% para el Q4, 2023 respectivamente.
+
+## Objetivo y criterio de Minería de Datos {.tabset .tabset-fade .tabset-pills} 
+
+### Objetivo
+
+Desarrollar un modelo algorítmico A priori para identificar la fuerza de asociación entre los productos de la tienda Online Target Global.
+
+### Criterios de éxito (desde la perspectiva de minería de datos).
+Para nuestro valor mínimo de soporte, especificaremos el 3%, lo que significa que solo se devolverán los artículos cuya frecuencia de aparición en los datos sea al menos del 3%.
+
+
+# Entendimiento de los Datos
+*** 
+
+* Carga Inicial del Data Set Online Retail para el informe inicial de Datos.
+
+```{r}
+#Librerías
+library(DT)
+library(dplyr)
+library(ggplot2)
+```
+
+
+```{r}
+EcommerceData <- read.csv("EcommerceData.csv")
+head(EcommerceData)
+#View(EcommerceData)
+```
+
+* Descripción del Data Set " Online Retail"
+
+El data set cuenta con las siguientes estructura de columnas.
+
+```{r}
+head(EcommerceData,10)
+```
+En cuanto al numero de registros se tienen 541909 observaciones con ocho variables
+```{r}
+str(EcommerceData)
+```
+Para tener un resumen descriptivo estadístico de nuestro data set, usamos la función *summary()* el cual nos da el siguiente resultado:
+```{r}
+summary(EcommerceData)
+```
+
+
+```{r}
+ggplot(EcommerceData) +
+  aes(x = "", y = UnitPrice) +
+  geom_boxplot(fill = "#0c4c8a") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(EcommerceData) +
+  aes(x = "", y = Quantity) +
+  geom_boxplot(fill = "#0c4c8a") +
+  theme_minimal()
+```
+```{r}
+#filter(EcommerceData, StockCode == "AMAZONFEE")
+#unique(EcommerceData$StockCode)
+```
+
+Se puede observar que el Data set contiene un total de `541909` filas (transacciones), y cuenta con `ocho` atributos. Además se tienen datos tipo numérico y strings(cadenas).
+
+En cuanto a la calidad de datos, se puede observar que:
+
+1) la columna CustomerID contiene `135080 NA's`, por lo que se deben de eliminar para evitar tener ruido y aumentar la consistencia en los resultados cuando se efectúe el modelo.
+
+2) La columna de fecha **InvoiceDate** es de tipo texto, y queremos que ésta sea de tipo `date`.
+
+3) Para aquellas transacciones que fueron canceladas o devueltas, se identifican con la letra "c" dentro del campo de *InvoiceNo* y por esta razón hay cantidades negativas en la columna "Quantity", las cual se deben de eliminar para el análisis. 
+
+4) Hay records que no necesariamentes son transacciones de productos, sino que se registran cuentas bancarias, fees, devoluciones etc. Lo anterior se puede ver en la columna de *StockCodes* ejemplos códigos D,M,S que representa "Discounts, Manual Imput, Sample.
+
+5) Se tienen precios (UnitPrice) negativos y algunos registros tiene 0, y en la columna de *Descripción* hay registros que estan vacíos.
+
+6) No existe una métrica de ventas dentro del data set, sin embargo se tienen los campos para poder calcularla para nuestro análisis. 
+
+*Este preprocesamiento, se realiza en la "Fase de Preparación"*
+
+Para este momento, conviene realizar una exploración de los datos inicial que ayuden a encontrar nuestros principales hallazgos e hipotésis, donde podríamos llegar a conclusiones que será validadas en los resultados finales. Se hace uso de Tableu para la visualización que incluye plots y gráficos que qyuden a mostrar las características y sugerir/descubrir tendencias interesantes que podrían tener los datos.
+
+`PONER LINK DE TABLEU`. 
+
+# Preparación de los datos
+*** 
+
+## Cambiar el tipo de dato a Date
+
+```{r }
+#datosEcommerce$InvoiceDate <- as.POSIXct(datosEcommerce$InvoiceDate, format="%m/%d/%Y %H:%M")
+EcommerceData$InvoiceDate <- as.Date(EcommerceData$InvoiceDate, format="%m/%d/%Y")
+str(EcommerceData)
+```
+
+## Creación de una nueva métrica
+
+```{r}
+EcommerceData$Sales <- EcommerceData$Quantity * EcommerceData$UnitPrice
+str(EcommerceData)
+```
+
+## Eliminar NA's
+
+```{r}
+EcommerceData <- na.omit(EcommerceData)
+summary(EcommerceData)
+```
+## Eliminar ventas negativas.
+
+```{r}
+EcommerceData <- EcommerceData[EcommerceData$Sales > 0, ]
+summary(EcommerceData)
+
+```
+
+## Eliminar excepciones de *StockCode*
+
+```{r}
+EcommerceData <- EcommerceData[-which(EcommerceData$StockCode == 'POST'),]
+summary(EcommerceData)
+
+```
+
+```{r}
+EcommerceData <- EcommerceData %>% filter(!StockCode %in% c('S','M'))
+summary(EcommerceData)
+```
+
+```{r}
+EcommerceData <- EcommerceData[-which(EcommerceData$StockCode == 'BANK CHARGES'),]
+summary(EcommerceData)
+```
+
+```{r}
+ # se guardan los datos como archivo csv en formato transaccion
+ #write.csv(EcommerceData,'transaccionesOR.csv', quote = FALSE)
+```
+
+# Modelado de los datos
+*** 
+* Explicar el modelo(Breve pero explicativo)
+* Definir Parametros
+* Ejecucion
+# Evaluar el modelo 
+* Describir el resultados de ambos modelos
+* Seleccionar el mejor modelo. 
+
+**Poner Graficos
