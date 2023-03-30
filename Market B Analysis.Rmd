@@ -17,7 +17,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(error = FALSE )
+knitr::opts_chunk$set(error = TRUE )
 
 ```
 
@@ -43,7 +43,7 @@ Identificar aquellas transacciones de órdenes de compra de Target Global que se
 Desarrollar un modelo algorítmico A priori para identificar la fuerza de asociación entre los productos de la tienda Online Target Global.
 
 ### Criterios de éxito (desde la perspectiva de minería de datos).
-Para nuestro valor mínimo de soporte, especificaremos el 3%, lo que significa que solo se devolverán los artículos cuya frecuencia de aparición en los datos sea al menos del 3%.
+Para nuestro valor mínimo de soporte, especificaremos el 1%, lo que significa que solo se devolverán los artículos cuya frecuencia de aparición en los datos sea al menos del 1%. Y además un 0.85 en la confianza.
 
 
 # Entendimiento de los Datos
@@ -56,6 +56,10 @@ Para nuestro valor mínimo de soporte, especificaremos el 3%, lo que significa q
 library(DT)
 library(dplyr)
 library(ggplot2)
+library(knitr)
+library(arules)
+library(arulesViz)
+library(plyr)
 ```
 
 
@@ -188,7 +192,7 @@ Este algoritmo se utiliza sobre bases de datos transaccionales, y permite encont
 
 ECLAT significa "Equivalence Class Clustering and bottom-up Lattice Traversal". Al igual que el algoritmo de Aproiri es otro método popular de reglas de asociación usado en minería de datos. Es una versión mas eficiente y escalable que el algoritmo de Apriori. Mientras que el algoritmo de Apriori trabaja en el sentido horizontal imitando la búsqueda de Breadth-First en una estructura de árbol, el ECLAT trabaja en el sentido vertical como la búsqueda de Depth-First. Usualmente se recomienda para bases de datos pequeñas y medianas.
 
-## Conversion de los datos originales a formato transaccional
+## Conversión de los datos originales a formato transaccional
 
 ```{r}
 # recordar de activar el paquete plyr
@@ -240,15 +244,15 @@ summary(TransactionsLoaded)
 ```{r}
 itemFrequencyPlot(TransactionsLoaded,topN=10,type='absolute',main="Items más frecuentes")
 ```
-* Definición de parámetros para modelos
 
-Dado los objetivos de minería planteados en el anteproyecto, se requiere un soporte mínimo del 1% (creo que necesitamos cambiar este porcentaje), y un mínimo de confianza del 0.85
+## Definición de parámetros para modelos
 
-* Generación de reglas para cada modelo
+Dado los objetivos de minería planteados en el anteproyecto, se requiere un soporte mínimo del 1%, y un mínimo de confianza del 0.85
+
+## Generación de reglas para cada modelo
 
 ```{r}
-#eclatItemsets <- eclat(TransactionsLoaded, parameter=list(supp=0.001, maxlen=10))
-eclatItemsets <- eclat(TransactionsLoaded, parameter=list(supp=0.001, maxlen=10))
+eclatItemsets <- eclat(TransactionsLoaded, parameter=list(supp=0.005, maxlen=10))
 tmpEclatRules <- ruleInduction(eclatItemsets, confidence = 0.85)
 
 # eliminar reglas que son subconjuntos de otras 
@@ -257,12 +261,11 @@ eclatRules<- tmpEclatRules[-eclatSubconjuntos]
 
 #inspect(eclatRules[1:10])
 # Ordena items de acuerdo al soporte
-inspect(sort(EclatRules,by='support',decreasing = TRUE)[1:20])
+inspect(sort(eclatRules,by='support',decreasing = TRUE)[1:20])
 ```
 
 ```{r}
-#aprioriRules <- apriori(TransactionsLoaded, parameter=list(supp=0.001, conf=0.8, maxlen=10))
-tmpAprioriRules <- apriori(TransactionsLoaded, parameter=list(supp=0.001, conf=0.85, maxlen=10))
+tmpAprioriRules <- apriori(TransactionsLoaded, parameter=list(supp=0.005, conf=0.85, maxlen=10))
 
 # eliminar reglas que son subconjuntos de otras 
 aprioriSubconjuntos<- which(colSums(is.subset(tmpAprioriRules,tmpAprioriRules))>1)
@@ -279,11 +282,10 @@ inspect(sort(aprioriRules,by='support',decreasing = TRUE)[1:20])
 write(eclatRules,file='eclatRules.csv',sep=',',quote=F,row.names=F)
 write(aprioriRules,file='aprioriRules.csv',sep=',',quote=F,row.names=F)
 ```
+# Visualización de resultados
+***
 
-
-* Visualización de reglas con gráficos
-
-## 5 mejores reglas según la confianza usando ECLAT
+## Top 5 reglas según la confianza usando ECLAT
 
 ```{r}
 # recordar activar arulesViz
@@ -291,7 +293,7 @@ eclatTop5Rules<- head(eclatRules,n=5,by='confidence')
 plot(eclatTop5Rules,method = 'graph',engine = 'htmlwidget')
 ```
 
-## 5 mejores reglas según la confianza usando Apriori
+## Top 5 reglas según la confianza usando Apriori
 
 ```{r}
 aprioriTop5Rules<- head(aprioriRules,n=5,by='confidence')
@@ -313,22 +315,23 @@ plot(aprioriTop10Rules,method ='paracoord')
 ```
 
 
-* Desempeño de modelos
+# Desempeño de modelos
+***
 
-Tiempos de ejecución por modelo: 1.15s para el apriori, mientras que para el ECLAT es de 2.3s
-Reglas de asociación generadas por modelo: 181032 para el apriori, y 278689 para el ECLAT. 
+**Tiempos de ejecución por modelo**: Aproximadamente 0.16s para el apriori, mientras que para el ECLAT es de alrededor de 0.88s
 
-Agregar tiempos variando el valor inicial de soporte
+**Reglas de asociación generadas por modelo**: 388 para el apriori, y 4066 para el ECLAT. 
 
 
-* Conclusiones
+# Conclusiones
+***
 
-** A nivel de asociación: el modelo de Eclat muestra que se generan más reglas con respecto al Apriori. Sin embargo, a la hora de eliminar las reglas que son subconjuntos de otras se obtiene el mismo número de reglas entre modelos. Lo cual no marca ninguna diferencia significativa entre ambos modelos. 
+* **A nivel de asociación**: el modelo de Eclat muestra que se generan más reglas con respecto al Apriori. Sin embargo, a la hora de eliminar las reglas que son subconjuntos de otras se obtiene el mismo número de reglas entre modelos. Lo cual no marca ninguna diferencia significativa entre ambos modelos. 
 
-** A nivel de tiempo de ejecución: el modelo de Apriori es muchas rapido que el ECLAT. 
+* **A nivel de tiempo de ejecución**: el modelo de Apriori es muchas rapido que el ECLAT. 
 
-** Los productos con mayor soporte son los siguientes: {PINK REGENCY TEACUP AND SAUCER, ROSES REGENCY TEACUP AND SAUCER} => {GREEN REGENCY TEACUP AND SAUCER}. Estos se tendrian que contemplar para el motor de recomendación de la tienda online.
+* Los productos con mayor soporte son los siguientes: {PINK REGENCY TEACUP AND SAUCER, ROSES REGENCY TEACUP AND SAUCER} => {GREEN REGENCY TEACUP AND SAUCER}. Estos se tendrian que contemplar para el motor de recomendación de la tienda online.
 
-** De acuerdo al analisis de Apriori o Eclat los primeros 10 Itemsets son los que tiene un soporte mayor al 1% y una confianza mayor al 0.85. Los cuales se puede utilizar para definir una estrategia de venta mas eficiente.
+* De acuerdo al análisis de Apriori o Eclat los primeros 10 Itemsets son los que tiene un soporte mayor al 1% y una confianza mayor al 0.85. Los cuales se puede utilizar para definir una estrategia de venta mas eficiente.
 
 
