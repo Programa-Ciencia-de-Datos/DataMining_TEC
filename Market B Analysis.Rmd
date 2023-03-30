@@ -182,11 +182,11 @@ write.csv(EcommerceData,'EcommerceDataCleaned.csv', quote = FALSE)
 
 * Modelo de Apriori
 
-Este algoritmo se utiliza sobre bases de datos transaccionales, y permite encontrar de forma eficiente "conjunto de items frecuentes", los cuales sirven de base para generar reglas de asociación.
+Este algoritmo se utiliza sobre bases de datos transaccionales, y permite encontrar de forma eficiente "conjunto de items frecuentes", los cuales sirven de base para generar reglas de asociación. Usualmente se recomienda para bases de datos grandes.
 
 * Modelo de Eclat
 
-ECLAT significa "Equivalence Class Clustering and bottom-up Lattice Traversal". Al igual que el algoritmo de Aproiri es otro método popular de reglas de asociación usado en minería de datos. Es una versión mas eficiente y escalable que el algoritmo de Apriori. Mientras que el algoritmo de Apriori trabaja en el sentido horizontal imitando la búsqueda de Breadth-First en una estructura de árbol, el ECLAT trabaja en el sentido vertical como la búsqueda de Depth-First. 
+ECLAT significa "Equivalence Class Clustering and bottom-up Lattice Traversal". Al igual que el algoritmo de Aproiri es otro método popular de reglas de asociación usado en minería de datos. Es una versión mas eficiente y escalable que el algoritmo de Apriori. Mientras que el algoritmo de Apriori trabaja en el sentido horizontal imitando la búsqueda de Breadth-First en una estructura de árbol, el ECLAT trabaja en el sentido vertical como la búsqueda de Depth-First. Usualmente se recomienda para bases de datos pequeñas y medianas.
 
 ## Conversion de los datos originales a formato transaccional
 
@@ -242,7 +242,7 @@ itemFrequencyPlot(TransactionsLoaded,topN=10,type='absolute',main="Items más fr
 ```
 * Definición de parámetros para modelos
 
-Dado los objetivos de minería planteados en el anteproyecto, se requiere un soporte mínimo del 3% (creo que necesitamos cambiar este porcentaje), y un mínimo de confianza del 0.85
+Dado los objetivos de minería planteados en el anteproyecto, se requiere un soporte mínimo del 1% (creo que necesitamos cambiar este porcentaje), y un mínimo de confianza del 0.85
 
 * Generación de reglas para cada modelo
 
@@ -257,7 +257,7 @@ eclatRules<- tmpEclatRules[-eclatSubconjuntos]
 
 #inspect(eclatRules[1:10])
 # Ordena items de acuerdo al soporte
-inspect(sort(EclatRules,by='support',decreasing = TRUE)[1:10])
+inspect(sort(EclatRules,by='support',decreasing = TRUE)[1:20])
 ```
 
 ```{r}
@@ -270,7 +270,7 @@ aprioriRules<- tmpAprioriRules[-aprioriSubconjuntos]
 
 #inspect(aprioriRules[1:10])
 # Ordena items de acuerdo al soporte
-inspect(sort(aprioriRules,by='support',decreasing = TRUE)[1:10])
+inspect(sort(aprioriRules,by='support',decreasing = TRUE)[1:20])
 ```
 
 ## Exportar reglas de ambos modelos
@@ -283,19 +283,19 @@ write(aprioriRules,file='aprioriRules.csv',sep=',',quote=F,row.names=F)
 
 * Visualización de reglas con gráficos
 
-## Tres mejores reglas según la confianza usando ECLAT
+## 5 mejores reglas según la confianza usando ECLAT
 
 ```{r}
 # recordar activar arulesViz
-eclatTop3Rules<- head(eclatRules,n=3,by='confidence')
-plot(eclatTop3Rules,method = 'graph',engine = 'htmlwidget')
+eclatTop5Rules<- head(eclatRules,n=5,by='confidence')
+plot(eclatTop5Rules,method = 'graph',engine = 'htmlwidget')
 ```
 
-## Tres mejores reglas según la confianza usando Apriori
+## 5 mejores reglas según la confianza usando Apriori
 
 ```{r}
-aprioriTop3Rules<- head(aprioriRules,n=3,by='confidence')
-plot(aprioriTop3Rules,method = 'graph',engine = 'htmlwidget')
+aprioriTop5Rules<- head(aprioriRules,n=5,by='confidence')
+plot(aprioriTop5Rules,method = 'graph',engine = 'htmlwidget')
 ```
 
 ## Top 10 items de acuerdo a la confianza usando ECLAT 
@@ -313,14 +313,22 @@ plot(aprioriTop10Rules,method ='paracoord')
 ```
 
 
-* Evaluar el modelo 
+* Desempeño de modelos
 
 Tiempos de ejecución por modelo: 1.15s para el apriori, mientras que para el ECLAT es de 2.3s
+Reglas de asociación generadas por modelo: 181032 para el apriori, y 278689 para el ECLAT. 
 
-* Describir el resultados de ambos modelos
+Agregar tiempos variando el valor inicial de soporte
 
-(Pendiente - Brainstorm with Lisi)
 
-* Seleccionar el mejor modelo.
+* Conclusiones
 
-(Pendiente - Brainstorm with Lisi)
+** A nivel de asociación: el modelo de Eclat muestra que se generan más reglas con respecto al Apriori. Sin embargo, a la hora de eliminar las reglas que son subconjuntos de otras se obtiene el mismo número de reglas entre modelos. Lo cual no marca ninguna diferencia significativa entre ambos modelos. 
+
+** A nivel de tiempo de ejecución: el modelo de Apriori es muchas rapido que el ECLAT. 
+
+** Los productos con mayor soporte son los siguientes: {PINK REGENCY TEACUP AND SAUCER, ROSES REGENCY TEACUP AND SAUCER} => {GREEN REGENCY TEACUP AND SAUCER}. Estos se tendrian que contemplar para el motor de recomendación de la tienda online.
+
+** De acuerdo al analisis de Apriori o Eclat los primeros 10 Itemsets son los que tiene un soporte mayor al 1% y una confianza mayor al 0.85. Los cuales se puede utilizar para definir una estrategia de venta mas eficiente.
+
+
