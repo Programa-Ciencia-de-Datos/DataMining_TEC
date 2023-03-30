@@ -99,10 +99,6 @@ ggplot(EcommerceData) +
   geom_boxplot(fill = "#0c4c8a") +
   theme_minimal()
 ```
-```{r}
-#filter(EcommerceData, StockCode == "AMAZONFEE")
-#unique(EcommerceData$StockCode)
-```
 
 Se puede observar que el Data set contiene un total de `541909` filas (transacciones), y cuenta con `ocho` atributos. Además se tienen datos tipo numérico y strings(cadenas).
 
@@ -124,7 +120,7 @@ En cuanto a la calidad de datos, se puede observar que:
 
 Para este momento, conviene realizar una exploración de los datos inicial que ayuden a encontrar nuestros principales hallazgos e hipotésis, donde podríamos llegar a conclusiones que será validadas en los resultados finales. Se hace uso de Tableu para la visualización que incluye plots y gráficos que qyuden a mostrar las características y sugerir/descubrir tendencias interesantes que podrían tener los datos.
 
-`PONER LINK DE TABLEU`. 
+[Tableau Proyecto Final](https://public.tableau.com/app/profile/luis.enrique.vargas/viz/ProyectoFinal_16801552299020/Dashboard1)
 
 # Preparación de los datos
 *** 
